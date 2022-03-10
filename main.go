@@ -11,30 +11,40 @@ var port string = ":8443"
 func main(){
 	r := gin.Default()
 
-	r.GET("/", handler.Root) //SUDAH tinggal webpage
-	r.GET("/home", handler.Home) //SUDAH tinggal webpage
+	r.GET("/", handler.RootHandler) //webpage
+	r.GET("/home", handler.HomeHandler) //webpage
+	
+	r.GET("/login", handler.LoginHandler) //webpage
+	r.POST("/loginAuth", handler.LoginAuth) //POST, auth
+	
+	r.GET("/register", handler.RegisterHandler)//webpage
+	r.POST("/registerAuth", handler.RegisterAuth)//POST, auth
+	
+	r.GET("/search", handler.SearchPostHandler)//Search post/s with title
+	
+	r.GET("/posts/:idPost", handler.ShowPostHandler) //webpage, gives data needed for displaying a post
+	r.GET("/post", handler.PostHandler) //webpage, gives categories for "post form"
+	r.POST("/postAuth", handler.PostAuth)//POST, auth (title, content, id_category)
+	r.DELETE("/posts/:idPost/deleteAuth", handler.DeletePostAuth) //DELETE a post (including the answers)
+	
+	r.GET("/posts/:idPost/answer", handler.AnswerHandler) //GET DATA, (Answer form) gives data to be displayed
+	r.POST("/posts/:idPost/answerAuth", handler.AnswerAuth) //Answer auth
+	r.DELETE("/answer/:idAnswer/deleteAuth", handler.DeleteAnswerAuth) //DELETE an answer
 
-	r.GET("/register", handler.Register) //SUDAH tinggal webpage
-	r.POST("/registerAuth", handler.RegisterAuth)
-
-	r.GET("/login", handler.Login) //SUDAH tinggal webpage
-	r.POST("/loginAuth", handler.LoginAuth)
-
-	r.GET("/post", handler.Post) //receiving categories //SUDAH tinggal webpage
-	r.POST("/postAuth", handler.PostAuth)
-	r.GET("/posts/:idPost", handler.ShowPost) //showing post/question (with the answer/s) with id as parameter //SUDAH tinggal webpage
-
-	r.GET("/posts/:idPost/answer", handler.Answer) //dari button //SUDAH tinggal webpage
-	r.POST("/posts/:idPost/answerAuth", handler.AnswerAuth)
+	r.POST("/follow/user/:id", handler.FollowFriend) //Follow a friend
+	r.DELETE("/unfollow/user/:id", handler.Unfollow) //Unfollow a friend
 
 	r.Run(port)
 
+
+
 }
 
-// // //-------------------------migration
+// //-------------------------migration
 // import (
-// 	"uniassist/repo"
+// 	"uniassist/service"
 // )
 // func main(){
-// 	repo.Migration()
+// 	// repo.Migration()
+// 	service.AddCategory()
 // }

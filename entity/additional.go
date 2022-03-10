@@ -1,25 +1,19 @@
 package entity
 
-import "time"
+import (
+	"gorm.io/gorm"
+)
 
 type InputLogin struct {
 	Username string `json:"username"` //username or email is allowed
 	Password string `json:"password"`
 }
 
-//Response
-type ResponseLogin struct {
-	ID       uint
-	Username string
-	Email    string
-	Name     string
-
-	// Bio Bio
-}
-
 type ResponseUser struct {
-	ID       uint `json:"id_user"`
+	ID       uint 
 	Username string
+	Name string
+	ProfilePic string //a link
 }
 
 type InputRegister struct {
@@ -28,23 +22,34 @@ type InputRegister struct {
 	Password string `json:"password"`
 }
 
+type FriendList struct {
+	ID uint //user
+	FriendID uint //tujuan follow
+}
+
 type InputPost struct {
 	Title   string `gorm:"default:'Blank Title Question'" json:"title"` //title question
 	Content string `gorm:"default:'Blank Question'" json:"content"`
-	UserId  uint   `json:"id_user"`
+	UserId  uint
+	CategoryId uint `gorm:"default:1"`
 }
 
 type ResponsePost struct {
-	CreatedAt time.Time
+	gorm.Model
 	Title string `json:"title"`
 	Content    string `json:"content"`
 
-	CategoryId uint `json:"id_category"`
-	CategoryName string
+	CategoryId uint
+}
+
+type ResponseShowPost struct {
+	Post ResponsePost
+	User ResponseUser
 }
 
 type ResponseAnswer struct {
 	/*search in database first*/
+	gorm.Model
 	Username  string //user's
-	Content string `json:"answer_content"`
+	Content string
 }

@@ -3,10 +3,10 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"uniassist/entity"
+	"uniassist/helper"
 	"uniassist/repo"
 	"uniassist/service"
 
@@ -17,118 +17,133 @@ import (
 Jika belum login, maka tampilkan landing page atau "/"
 Jika SUDAH LOGIN, redirect ke "/home"
 */
-func Root(c *gin.Context) {
-	tkn, claims :=cookieChecker(c)
-	if tkn == nil || claims == nil { 
-		c.JSON(http.StatusOK, gin.H{
-			"title":   "UniAssist, Belajar lebih asik!",
-			"content": "AYO JOIN KAMI SEKARANG",
-		})
-		return
-	}
-
-	location := url.URL{Path: "/home",}
-	c.Redirect(http.StatusFound, location.RequestURI())
-}
-
-func Login(c *gin.Context) { // /loginAuth
-	tkn, claims := cookieChecker(c)
-	if tkn != nil && claims != nil{ //if cookie exist, redirect to home
-		location := url.URL{Path: "/home",}
-		c.Redirect(http.StatusFound, location.RequestURI())
-		return
-	}
-
-	//MASUKKAN PAGE DISINI
+func RootHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"message" : "welcome to login page:D",
+		"title":   "UniAssist, Belajar lebih asik!",
+		"content": "AYO JOIN KAMI SEKARANG",
 	})
 }
 
-func Register(c *gin.Context) { // /registerAuth
-	tkn, claims := cookieChecker(c)
-	if tkn != nil && claims != nil{ //if cookie exist, redirect to home
-		location := url.URL{Path: "/home",}
-		c.Redirect(http.StatusFound, location.RequestURI())
-		return
-	}
-
-	//MASUKKAN PAGE DISINI
-	c.JSON(http.StatusOK, gin.H{
-		"message" : "welcome to register page:D",
-	})
-}
-
-func Home(c *gin.Context) { //home handler
-	tkn, claims :=cookieChecker(c)
-	if tkn == nil || claims == nil{
-		location := url.URL{Path: "/login",}
-		c.Redirect(http.StatusFound, location.RequestURI())
-		return
-	}
-
-	c.Writer.Write([]byte(fmt.Sprintf("Hello, %s", claims.Username)))
-	fmt.Printf("tkn: %v\n", tkn)
-	fmt.Printf("claims: %v\n", claims)
-}
-
-
-func Post(c *gin.Context){ //post/question form
-	tkn, claims := cookieChecker(c)
-	if tkn == nil || claims == nil{
-		//do something atau PAKAI TOKEN NAMA LAIN BIAR REGISTERED USER BISA JAWAB
+func LoginHandler(c *gin.Context) {
+	tkn, claims, _ := cookieChecker(c)
+	if tkn != nil && claims != nil {
+		c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"))
 		return
 	}
 	
-	//showing categories
+	//JANGAN LUPA GIVE WEBPAGE
+	c.JSON(http.StatusOK, gin.H{
+		"status" : "SUCCESS",
+		"data" : fmt.Sprintf("%s%s", c.Request.Host,"/loginAuth"),
+	})
+}
+
+func RegisterHandler(c *gin.Context) { // /registerAuth
+	tkn, claims, _ := cookieChecker(c)
+	if tkn != nil && claims != nil{
+		c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"))
+		return
+	}
+
+	//JANGAN LUPA GIVE WEBPAGE
+	c.JSON(http.StatusOK, gin.H{
+		"status" : "SUCCESS",
+		"data" : fmt.Sprintf("%s%s", c.Request.Host,"/registerAuth"),
+	})
+}
+
+func HomeHandler(c *gin.Context) { //home handler
+	tkn, claims, _ :=cookieChecker(c)
+	if tkn == nil || claims == nil{
+		c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status" : "SUCCESS",
+	})
+}
+
+
+func PostHandler(c *gin.Context){ //post/question form
+	tkn, claims, err := cookieChecker(c)
+	if tkn == nil || claims == nil || err != nil {
+		c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"))
+		return
+	}
+	
+	//showing categories //JANGAN LUPA GIVE WEBPAGE
 	categories := service.GetCategories()
-	c.JSON(http.StatusOK, categories)
+	c.JSON(http.StatusOK, gin.H{
+		"status" : "SUCCESS",
+		"categories" : categories,
+	})
 }
 
 
 /*
 For showing post relative to post's id as parameter
 */
-func ShowPost(c *gin.Context){ //show post/question
+func ShowPostHandler(c *gin.Context){ //show post/question
 	idPost := c.Param("idPost")
 	idPostInt, err := strconv.Atoi(idPost)
 	fmt.Printf("err: %v\n", err)
 	if err != nil || idPostInt < 0{
-		c.JSON(http.StatusNotFound, "404 Not found")
+		c.JSON(http.StatusNotFound, gin.H{
+			"status" : "ERROR",
+			"message" : " 404 Post NOT FOUND",
+		})
 		return
-	}; var id uint = uint(idPostInt)
+	}; var id uint = uint(idPostInt) // id==idPost
 
 	post := entity.Post{}
 	post.ID = id
 	errdb := repo.Db.Where("id = ?", post.ID).First(&post)
 	if errdb.Error != nil {
-		c.JSON(http.StatusNotFound, "Post/Question Not found")
+		c.JSON(http.StatusNotFound, gin.H{
+			"status" : "ERROR",
+			"message" : "404 Post NOT FOUND",
+		})
 		return
 	}
-	
+
 	responseUser := service.ResponseUserDataId(post.UserId)
-	responsePost := service.GetPost(&post)
+	responsePost := service.GetResponsePost(&post)
 	responseAnswer := service.GetAnswers(post.ID)
-	answeButton := fmt.Sprintf("%s%s%s",c.Request.Host ,c.Request.URL.Path, "/answer")
 
+	fmt.Printf("responseUser: %v\n", responseUser)
+	fmt.Println()
+	fmt.Printf("responsePost: %v\n", responsePost)
+	fmt.Println()
+	fmt.Printf("responseAnswer: %v\n", responseAnswer)
+	fmt.Println()
+	// responseUser := service.ResponseUserDataId(post.UserId)
+	// responsePost := service.GetResponsePost(&post)
+	// responseAnswer := service.GetAnswers(post.ID)
+	answerButton := fmt.Sprintf("%s%s%s",c.Request.Host ,c.Request.URL.Path, "/answer")
 
+	var resp entity.ResponseShowPost
+	resp.Post = responsePost
+	resp.User = responseUser
+
+	fmt.Printf("resp: %v\n", resp)
+
+	//JANGAN LUPA GIVE WEBPAGE
 	c.JSON(http.StatusOK, gin.H{
-		"user" : responseUser,
-		"post" : responsePost,
+		"status" : "SUCCESS",
+		"post" : resp,
 		"answers" : responseAnswer,
-		"answerButton" : answeButton,
+		"answerButton" : answerButton,
 	})
 }	
 
 
-func Answer(c *gin.Context){
-	tkn, claims := cookieChecker(c)
-	if tkn == nil || claims == nil{
-		location := url.URL{Path: "/login",}
-		c.Redirect(http.StatusFound, location.RequestURI())
+func AnswerHandler(c *gin.Context){
+	tkn, claims, err := cookieChecker(c)
+	if tkn == nil || claims == nil || err != nil{
+		c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"))
 		return
 	}
-
 
 	//converting idPost to uint
 	idPost := c.Param("idPost")
@@ -150,12 +165,15 @@ func Answer(c *gin.Context){
 	} //--------
 	
 	responseUser := service.ResponseUserDataId(post.UserId)
-	responsePost := service.GetPost(&post)
+	responsePost := service.GetResponsePost(&post)
+	var resp entity.ResponseShowPost
+	resp.Post = responsePost
+	resp.User = responseUser
 
 	//JANGAN LUPA GIVE WEBPAGE
 	c.JSON(http.StatusOK, gin.H{
-		"user" : responseUser,
-		"post" : responsePost,
+		"status" : "SUCCESSS",
+		"post" : resp,
 	})
 
 }

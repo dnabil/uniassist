@@ -1,53 +1,44 @@
 package entity
 
-import "time"
-
-type Bio struct {
-	ID         uint   `gorm:"primaryKey" json:"id_bio"`
-	Content    string `gorm:"default:'The user hasn't wrote anything yet...'" json:"content"`
-	Occupation string `gorm:"default:'-'" json:"occupation"`
-}
+import (
+	"gorm.io/gorm"
+)
 
 type User struct {
-	ID        uint `gorm:"primaryKey" json:"id_user"`
-	CreatedAt time.Time
-	Username  string
-	Email     string
-	Password  string
+	gorm.Model
+	Username  string `gorm:"not null" type:"VARCHAR(255)"`
+	Email     string `gorm:"not null" type:"VARCHAR(255)"`
+	Password  string `gorm:"not null"`
 	Name      string `gorm:"default:'user#-'"`
-
-	Bio   Bio 
-	BioId uint `json:"id_bio"`
+	// Users []User `gorm:"many2many:friendlist;"`
+	
+	ProfilePic string `gorm:"default:'https://freepikpsd.com/file/2019/10/default-profile-image-png-1-Transparent-Images.png'"`
 }
 
 type Post struct {
-	ID uint `gorm:"primaryKey" json:"id_post"`
-	CreatedAt time.Time
-	Title    string `gorm:"default:'Blank Title Question'" json:"title"` //title question
-	Content    string `gorm:"default:'Blank Question'" json:"content"`
+	gorm.Model
+	Title    string `gorm:"not null" json:"title"` //title question
+	Content    string `gorm:"not null" json:"content"`
 
 	User User 	
-	UserId uint `json:"id_user"`
+	UserId uint `gorm:"not null"`
 	
 	Category Category
-	CategoryId uint `json:"id_category"`
-	CategoryName string
+	CategoryId uint `gorm:"default:1"`
 }
 
-type Category struct{ //1 post 1 kategori
-	ID uint `gorm:"primaryKey" json:"id_category"`
-	Name string
+type Category struct{ //1 post 1 kategori (ngikutin dari desain)
+	ID uint `gorm:"primaryKey"`
+	Name string `gorm:"not null"`
 }
-
 type Answer struct {
-	ID uint `gorm:"primaryKey" json:"id_answer"`
-	CreatedAt time.Time
-	Content    string `gorm:"default:'Blank Answer'" json:"answer_content"`
+	gorm.Model
+	Content    string `gorm:"not null"`//`gorm:"default:'Blank Answer'"`
 	Username string `gorm:"not null"` //received from claims/token
 
 	User User 	
-	UserId uint `json:"id_user"`
+	UserId uint `gorm:"not null"`
 
 	Post Post
-	PostId uint `json:"id_post"`
+	PostId uint `gorm:"not null"`
 }
