@@ -101,16 +101,16 @@ func RegisterAuth(c *gin.Context){
 		err = false
 		return
 	}
-	if isBlank(input.Email) {c.JSON(http.StatusBadRequest, gin.H{"error" : "Do not leave Email blank"}); return}
-	if isBlank(input.Password) {c.JSON(http.StatusBadRequest, gin.H{"error" : "Do not leave Password blank"}); return}
-	if isBlank(input.Username) {c.JSON(http.StatusBadRequest, gin.H{"error" : "Do not leave Username blank"}); return}
+	if isBlank(input.Email) {c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Do not leate Email blank")); return}
+	if isBlank(input.Password) {c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Do not leate Password blank")); return}
+	if isBlank(input.Username) {c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Do not leate Username blank")); return}
 
 	/*email and username must be different from the ones that exist in database*/
 	//checking email
 	repo.Db.Where("email = ?", input.Email).First(&theUser)
 	if theUser.Email != "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error" : "Email already used",
+			"status" : "ERROR", "message" : "Email already used",
 		})
 		return
 	}
@@ -119,7 +119,7 @@ func RegisterAuth(c *gin.Context){
 	repo.Db.Where("username = ?", input.Username).First(&theUser)
 	if theUser.Username != "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error" : "Username already used",
+			"status" : "ERROR", "message":"Username already used",
 		})
 		return
 	}
@@ -135,8 +135,8 @@ func RegisterAuth(c *gin.Context){
 	repo.Db.Create(&theUser)
 	
 	c.JSON(http.StatusOK, gin.H{
-		"message" : "Registered as",
-		"account" : input,
+		"status" : "SUCCESS",
+		"message" : "Account created",
 	})
 }
 
@@ -154,20 +154,20 @@ func LoginAuth(c *gin.Context){
 	//finding username
 	err = repo.Db.Where("username = ?", InputLogin.Username).First(&User).Error
 	if err != nil && User.Username == "" {
-		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Username shouldn't be empty")) ;return;}
-	if err != nil {c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "wrong username/email"));return;}
+		c.JSON(http.StatusNotFound, helper.JsonMessage("ERROR", "wrong username/email")) ;return;}
+	if err != nil {c.JSON(http.StatusNotFound, helper.JsonMessage("ERROR", "wrong username/email"));return;}
 	
 	//finding email
 	err = repo.Db.Where("email = ?", InputLogin.Email).First(&User).Error
 	if err != nil && User.Email == ""{
-		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Email shouldn't be empty"));return;}
-	if err != nil {c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "wrong username/email"));return;}
+		c.JSON(http.StatusNotFound, helper.JsonMessage("ERROR", "wrong username/email"));return;}
+	if err != nil {c.JSON(http.StatusNotFound, helper.JsonMessage("ERROR", "wrong username/email"));return;}
 	
 
 	//comparing password
 	passError := bcrypt.CompareHashAndPassword([]byte(User.Password), []byte(InputLogin.Password)) 
 	if passError == bcrypt.ErrMismatchedHashAndPassword && passError != nil {
-		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Wrong Password, try again"))
+		c.JSON(http.StatusNotFound, helper.JsonMessage("ERROR", "Wrong Password, try again"))
 		return
 	}
 
@@ -452,7 +452,7 @@ func GiveLoveHandler(c *gin.Context){
 		return;}
 	
 	fmt.Printf("%s give %v love to post id %v\n",claims.Username , inputLove.LoveValue, inputLove.PostId)
-	c.JSON(http.StatusOK, helper.JsonMessage("SUCCESS", "Love given"))
+	c.JSON(http.StatusCreated, helper.JsonMessage("SUCCESS", "Love given"))
 }
 
 

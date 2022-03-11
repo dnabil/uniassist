@@ -3,13 +3,15 @@ package main
 import (
 	"uniassist/handler"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-var port string = ":8443"
+var port string = ":5000"
 
 func main(){
 	r := gin.Default()
+	r.Use(cors.Default())
 
 	r.GET("/", handler.RootHandler) //webpage
 	r.GET("/home", handler.HomeHandler) //webpage
