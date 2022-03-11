@@ -24,7 +24,10 @@ type Post struct {
 	UserId uint `gorm:"not null"`
 	
 	Category Category
-	CategoryId uint `gorm:"default:1"`
+	CategoryId uint `gorm:"default:1" json:"category_id"`
+
+	Loves uint `gorm:"default:0"`//from LovePost (akumulasi)
+	IsAnswered bool `gorm:"default:false"`
 }
 
 type Category struct{ //1 post 1 kategori (ngikutin dari desain)
@@ -35,10 +38,22 @@ type Answer struct {
 	gorm.Model
 	Content    string `gorm:"not null"`//`gorm:"default:'Blank Answer'"`
 	Username string `gorm:"not null"` //received from claims/token
+	Name string `gorm:"not null"` //received from claims/token
 
 	User User 	
 	UserId uint `gorm:"not null"`
 
 	Post Post
 	PostId uint `gorm:"not null"`
+}
+
+type LovePost struct{
+	ID        uint `gorm:"primarykey"`
+	LoveValue uint `json:"love_value"`
+
+	Post Post 
+	PostId uint 
+
+	User User 
+	UserId uint 
 }

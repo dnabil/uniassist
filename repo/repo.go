@@ -23,7 +23,7 @@ var Db = connectDB() //CONNECTED TO DB
 
 /*AFTER MIGRATION, DB WILL CLOSE ITSELF!*/
 func Migration() {
-	Db.AutoMigrate(&entity.User{}, &entity.Post{}, &entity.Category{}, &entity.Answer{})
+	Db.AutoMigrate(&entity.User{}, &entity.Post{}, &entity.Category{}, &entity.Answer{}, &entity.LovePost{})
 	log.Println("data migrated!")
 
 	//closing db

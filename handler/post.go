@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 
 	// "net/url"
 	"strconv"
@@ -36,34 +35,48 @@ var jwtKey = []byte("KeyUniAssist")
 
 
 //tkn, claims :=cookieChecker(c)
-func cookieChecker(c *gin.Context) (tkn *jwt.Token, claims *Claims, err error){
+func cookieChecker(c *gin.Context) (*jwt.Token, *Claims, error){
 
-	cookie, err := c.Request.Cookie("token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			return
-		}
-		return
-	}
-
-	tokenStr := cookie.Value
-	claims = &Claims{}
-
-	tkn, err = jwt.ParseWithClaims(tokenStr, claims,
+	claims2 := &Claims{}
+	tkn2 :=  &jwt.Token{}
+	tokenStr2 := c.Request.Header.Get("token")
+	// println()
+	// println("str2 : ", tokenStr2)
+	tkn2, err := jwt.ParseWithClaims(tokenStr2, claims2,
 		func(t *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})
-
+	
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
-			return
+			c.Writer.WriteHeader(http.StatusUnauthorized)
+			return nil, nil, fmt.Errorf("Unauthorized")
 		}
+		c.Writer.WriteHeader(http.StatusBadRequest)
+		return nil, nil, fmt.Errorf("Bad request")
+	}
+
+	if !tkn2.Valid {
+		c.Writer.WriteHeader(http.StatusUnauthorized)
+		return nil, nil, fmt.Errorf("Unauthorized")
+	}
+		
+	println(claims2.Username)
+	return tkn2, claims2, err
+}
+
+func Debug(c *gin.Context){
+	tkn, claims, err := cookieChecker(c)
+	if tkn == nil || claims == nil || err != nil{ //if not authorized, redirect to login page
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":"ERROR",
+			"message" : "Please register/login first to post a question",
+			"data" : fmt.Sprintf("%s%s",c.Request.Host,"/login"),
+		}); log.Println(err.Error())
 		return
 	}
-	if !tkn.Valid {
-		return
-	}
-	return //tkn, claims and err
+
+	c.JSON(http.StatusOK, "WELCOME")
 }
 
 
@@ -72,9 +85,7 @@ func RegisterAuth(c *gin.Context){
 
 	err := c.ShouldBindJSON(&input)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error" : "error, please contact administrator",
-		})
+		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Contact administrator"))
 		log.Println("register json binding failed")
 		return
 	}
@@ -113,7 +124,7 @@ func RegisterAuth(c *gin.Context){
 		return
 	}
 	//success, creating new account/user
-	theUser.Name = fmt.Sprintf("user#%d", theUser.ID)
+	theUser.Name = fmt.Sprintf("%s %s",input.Username , "Subagyo")
 	theUser.Email = input.Email
 	theUser.Username = input.Username
 	//storing hashed password
@@ -135,48 +146,33 @@ func LoginAuth(c *gin.Context){
 
 	err := c.ShouldBindJSON(&InputLogin)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":"ERROR",
-			"message":err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Contact Administrator"))
 		log.Println("JSON binding failed")
 		return
 	}
-
+	
 	//finding username
-	_ = repo.Db.Where("username = ?", InputLogin.Username).First(&User).Error
-	var isExist = false
-	if User.Username != ""{
-		isExist = true
-	}
-	if !isExist{
-		//finding email
-		repo.Db.Where("email = ?", InputLogin.Username).First(&User)
-		var isExist = false
-		if User.Email != ""{
-		isExist = true
-		}
-		if !isExist{
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status":"ERROR",
-				"message":"Invalid email/username",
-			})
-			return
-		}
-	}
+	err = repo.Db.Where("username = ?", InputLogin.Username).First(&User).Error
+	if err != nil && User.Username == "" {
+		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Username shouldn't be empty")) ;return;}
+	if err != nil {c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "wrong username/email"));return;}
+	
+	//finding email
+	err = repo.Db.Where("email = ?", InputLogin.Email).First(&User).Error
+	if err != nil && User.Email == ""{
+		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Email shouldn't be empty"));return;}
+	if err != nil {c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "wrong username/email"));return;}
+	
 
 	//comparing password
 	passError := bcrypt.CompareHashAndPassword([]byte(User.Password), []byte(InputLogin.Password)) 
 	if passError == bcrypt.ErrMismatchedHashAndPassword && passError != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":"ERROR",
-			"message":"Invalid password",
-		})
+		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Wrong Password, try again"))
 		return
 	}
 
 	/*TOKEN's DEMISE >:D*/
-	expirationTime := time.Now().Add(time.Minute * 5)
+	expirationTime := time.Now().Add(time.Minute * 30)
 
 	claims := &Claims{
 		Username: InputLogin.Username,
@@ -195,17 +191,11 @@ func LoginAuth(c *gin.Context){
 		}); log.Println(err.Error())
 		return
 	}
-
-	http.SetCookie(c.Writer,
-		&http.Cookie{
-			Name:    "token",
-			Value:   tokenString,
-			Expires: expirationTime,
-		})
 		
-	c.JSON(http.StatusNotFound, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status":"SUCCESS",
 		"message" : "Login success",
+		"token" : tokenString,
 	});
 }
 
@@ -264,7 +254,7 @@ func PostAuth(c *gin.Context) {
 
 	err = repo.Db.Create(&post).Error
 	if err != nil { log.Println(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusNotImplemented, gin.H{
 			"status":"ERROR",
 			"message":"Failed creating object post",
 		})
@@ -274,8 +264,7 @@ func PostAuth(c *gin.Context) {
 	
 	c.JSON(http.StatusCreated, gin.H{
 		"status" : "SUCCESS",
-		"message" : "new post created",
-		"data" : post,
+		"message" : "New post created",
 	})
 }
 
@@ -336,6 +325,7 @@ func AnswerAuth(c *gin.Context) {
 
 	responseUser := service.ResponseUserData(claims.Username)
 	answer.UserId = responseUser.ID
+	answer.Name = responseUser.Name
 	answer.PostId = id
 
 	errdb = repo.Db.Create(&answer)
@@ -353,22 +343,6 @@ func AnswerAuth(c *gin.Context) {
 	})
 }
 
-//search user by username
-func SearchPostHandler(c *gin.Context){
-	q := c.Query("q")
-	q = strings.ReplaceAll(q, " ", "%")
-	posts := service.SearchPostTitle(q)
-	if posts == nil {
-		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "No posts found"))
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status" : "SUCCESS",
-		"message" : "Data found",
-		"result" : posts, 
-	})
-}
 
 //follow friend by id
 func FollowFriend(c *gin.Context) {
@@ -404,7 +378,7 @@ func FollowFriend(c *gin.Context) {
 	}
 	//--------------
 
-	friend := service.ResponseUserDataId(id)
+	friend, _ := service.ResponseUserDataId(id)
 	var isBlank bool= (friend == entity.ResponseUser{}) 
 	if isBlank {
 		c.JSON(http.StatusNotFound, helper.JsonMessage("ERROR", "ID NOT FOUND"))
@@ -418,6 +392,67 @@ func FollowFriend(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, helper.JsonMessage("SUCCESS", "Followed :D"))
+}
+
+func GiveLoveHandler(c *gin.Context){
+
+	tkn, claims, err := cookieChecker(c)
+	if tkn == nil || claims == nil || err != nil{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":"ERROR",
+			"message" : "Please register/login first to give love to a post",
+			"data" : fmt.Sprintf("%s%s",c.Request.Host,"/login"),
+		}); log.Println(err.Error())
+		return
+	}
+
+	inputLove := entity.LovePost{}
+	err = c.ShouldBindJSON(&inputLove)
+	var falseLove bool = (inputLove.LoveValue <= 0 || inputLove.LoveValue > 5) 
+	if err != nil || falseLove{
+		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Bad Request"))
+		return
+	}
+
+	responseUser := service.ResponseUserData(claims.Username)
+	userid := responseUser.ID
+
+	//converting idPost to uint
+	idPost := c.Param("idPost")
+	idPostInt, err := strconv.Atoi(idPost)
+
+	if err != nil || idPostInt < 0{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":"ERROR",
+			"message" : "404 not found",
+		}); log.Println(err.Error())
+		return
+	}; var id uint = uint(idPostInt) //id == idPost
+
+	post, err := service.GetPost(id); emptyPost := entity.Post{}
+	fmt.Printf("id: %v\n", id)
+	fmt.Printf("post: %v\n", post)
+	if post == emptyPost {
+		c.JSON(http.StatusNotFound, helper.JsonMessage("ERROR", "Post Not Found"))
+		return;}
+
+	loveD := service.IsLovePost(userid, id)	
+	if loveD {c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "You can't do that")); return}
+
+	inputLove.PostId = id
+	inputLove.UserId = userid
+
+	err = service.CreateLovePost(inputLove)
+	if err != nil {
+		c.JSON(http.StatusNotImplemented, helper.JsonMessage("ERROR", "Contact administrator"))
+		return;}
+	err = service.UpdateLovePost(inputLove.LoveValue, &post, true);
+	if err != nil {
+		c.JSON(http.StatusNotImplemented, helper.JsonMessage("ERROR", "Contact administrator"))
+		return;}
+	
+	fmt.Printf("%s give %v love to post id %v\n",claims.Username , inputLove.LoveValue, inputLove.PostId)
+	c.JSON(http.StatusOK, helper.JsonMessage("SUCCESS", "Love given"))
 }
 
 

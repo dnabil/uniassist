@@ -5,7 +5,8 @@ import (
 )
 
 type InputLogin struct {
-	Username string `json:"username"` //username or email is allowed
+	Email string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -38,18 +39,46 @@ type ResponsePost struct {
 	gorm.Model
 	Title string `json:"title"`
 	Content    string `json:"content"`
+	IsAnswered bool `gorm:"default:false"`
 
 	CategoryId uint
 }
 
 type ResponseShowPost struct {
 	Post ResponsePost
+	Category Category
 	User ResponseUser
+	Answer []ResponseAnswer
+
+	//tambahan, diisi pake method di service
+	IsLoved bool
+	Rating float64
+}
+
+type ResponseShowPost2 struct {
+	Post ResponsePost
+	Category Category
+	User ResponseUser
+
+	//tambahan, diisi pake method di service
+	Rating float64
 }
 
 type ResponseAnswer struct {
 	/*search in database first*/
 	gorm.Model
 	Username  string //user's
+	Name string //user's
 	Content string
+}
+type ResponseLovePost struct {
+	ID uint
+	LoveValue uint
+	PostId uint
+	UserId uint
+}
+
+type UserNFriends struct {
+	User ResponseUser
+	Friends []ResponseUser
 }
