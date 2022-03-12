@@ -10,7 +10,7 @@ import (
 
 func connectDB() *gorm.DB {
 	// refer https://github.com/go-sql-driver/mysql#dsn-data-source-name for details
-	dsn := "root@tcp(127.0.0.1:3306)/uniassist?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "admin:HnVXVx8rF4G3YjS3nKuQrKVS7apg4Vzt@tcp(13.212.140.154:3306)/intern_bcc_9?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalln("DB failed to connect")
@@ -33,4 +33,3 @@ func Migration() {
 	}
 	sqlDB.Close()
 }
-
