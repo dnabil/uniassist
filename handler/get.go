@@ -149,7 +149,7 @@ func ShowPostHandler(c *gin.Context){ //show post/question
 	responseUser, err := service.ResponseUserDataId(post.UserId)
 	if err != nil {c.JSON(http.StatusInternalServerError, helper.JsonMessage("ERROR", "Post's owner account may have been deleted"))} 
 	responsePost := service.GetResponsePost(&post)
-	responseAnswer := service.GetAnswers(post.ID)
+	responseAnswer, _ := service.GetAnswers(post.ID)
 
 
 	var resp entity.ResponseShowPost
@@ -286,7 +286,7 @@ func AnswerHandler(c *gin.Context){
 	responseUser, err := service.ResponseUserDataId(post.UserId)
 	if err != nil {c.JSON(http.StatusInternalServerError, helper.JsonMessage("ERROR", "Post's owner account may have been deleted"))} 
 	responsePost := service.GetResponsePost(&post)
-	responseAnswer := service.GetAnswers(post.ID)
+	responseAnswer, _ := service.GetAnswers(post.ID)
 
 
 	var resp entity.ResponseShowPost

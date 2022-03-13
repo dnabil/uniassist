@@ -442,6 +442,9 @@ func GiveLoveHandler(c *gin.Context){
 	}; var id uint = uint(idPostInt) //id == idPost
 
 	post, err := service.GetPost(id); emptyPost := entity.Post{}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, helper.JsonMessage("ERROR", "Database error"))
+	}
 	fmt.Printf("id: %v\n", id)
 	fmt.Printf("post: %v\n", post)
 	if post == emptyPost {

@@ -69,11 +69,9 @@ func DeletePost(post *entity.Post) (err error){
 
 
 /*Get response answers from an id post*/
-func GetAnswers(id uint) ([]entity.ResponseAnswer){
-	var answers []entity.ResponseAnswer
-	_ = repo.Db.Where("post_id = ?", id).Model(&entity.Answer{}).Find(&answers)
-
-	return answers
+func GetAnswers(id uint) (answers []entity.ResponseAnswer, err error){
+	err = repo.Db.Where("post_id = ?", id).Model(&entity.Answer{}).Find(&answers).Error
+	return
 }
 //Get a single answer entity from AnswerID
 func GetAnswerFromId(id uint)(entity.Answer){
