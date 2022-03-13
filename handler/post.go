@@ -143,7 +143,8 @@ func RegisterAuth(c *gin.Context){
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, helper.JsonMessage("ERROR", "Contact administator"))
 	}
-	repo.Db.Create(&theUser)
+	err = repo.Db.Create(&theUser).Error
+	if err != nil {c.JSON(http.StatusNotImplemented, helper.JsonMessage("ERROR", "Account not created"));return;}
 	
 	c.JSON(http.StatusOK, gin.H{
 		"status" : "SUCCESS",

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"uniassist/handler"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +14,7 @@ func main(){
 	r.Use(CORSPreflightMiddleware())
 
 	r.GET("/", handler.RootHandler) //webpage
-	r.GET("/home", handler.HomeHandler) //data (topPosts + userdata + friends)
+	r.GET("/home", handler.HomeHandler) //data (topPosts + userdata + friendlist)
 
 	r.GET("/login", handler.LoginHandler) //webpage
 	r.POST("/loginAuth", handler.LoginAuth) //POST, auth
@@ -44,7 +45,7 @@ func main(){
 
 	r.GET("/debug", handler.Debug)
 
-	r.Run(port)
+	log.Fatal(r.Run(port)) 
 
 }
 
