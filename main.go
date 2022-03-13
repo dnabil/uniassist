@@ -3,7 +3,6 @@ package main
 import (
 	"uniassist/handler"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,10 +10,10 @@ var port string = ":5000"
 
 func main(){
 	r := gin.Default()
-	r.Use(cors.Default())
+	r.Use(CORSPreflightMiddleware())
 
 	r.GET("/", handler.RootHandler) //webpage
-	r.GET("/home", handler.HomeHandler) //webpage
+	r.GET("/home", handler.HomeHandler) //data (topPosts + userdata + friends)
 
 	r.GET("/login", handler.LoginHandler) //webpage
 	r.POST("/loginAuth", handler.LoginAuth) //POST, auth
@@ -47,6 +46,22 @@ func main(){
 
 	r.Run(port)
 
+}
+
+func CORSPreflightMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+        c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+        c.Writer.Header().Set("Access-Control-Allow-Methods", "*")
+        c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, user-info")
+        c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+        if c.Request.Method == "OPTIONS" {
+            c.Writer.Header().Set("Content-Type", "application/json")
+            c.AbortWithStatus(204)
+        } else {
+            c.Next()
+        }
+    }
 }
 
 // //-------------------------migration

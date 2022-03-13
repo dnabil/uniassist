@@ -53,20 +53,31 @@ func RegisterHandler(c *gin.Context) { // /registerAuth
 }
 
 func HomeHandler(c *gin.Context) { //home handler
+	loggedIn := false
 	tkn, claims, _ :=cookieChecker(c)
-	if tkn == nil || claims == nil{
-		c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"))
+	if tkn != nil || claims != nil{
+		loggedIn = true
+	}
+	topPosts, err := service.GetTopPost()
+	if err != nil {c.JSON(http.StatusInternalServerError, helper.JsonMessage("ERROR", "Contact administrator"));return;}
+	
+	if !loggedIn {
+		fmt.Println("/n not logged in! /homeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+		c.JSON(http.StatusOK, gin.H{
+			"status" : "SUCCESS",
+			"topPosts" : topPosts,
+		})
 		return
 	}
-
+	
+	log.Println()
+	log.Println("UDAH LOGIN YAAAAAAAAAAAAAAAAAAAAAAA")
+	log.Println()
 	idUser := service.ResponseUserData(claims.Username).ID
 	userNFriends := entity.UserNFriends{}
 	userdata , friendsdata, err := service.GetUserAndFriendData(idUser)
 	if err != nil {c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"));return;}
 	userNFriends.User = userdata; userNFriends.Friends = friendsdata;
-	
-	topPosts, err := service.GetTopPost()
-	if err != nil {c.JSON(http.StatusInternalServerError, helper.JsonMessage("ERROR", "Contact administrator"));return;}
 	
 	c.JSON(http.StatusOK, gin.H{
 		"status" : "SUCCESS",

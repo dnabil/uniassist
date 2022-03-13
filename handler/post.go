@@ -39,7 +39,18 @@ func cookieChecker(c *gin.Context) (*jwt.Token, *Claims, error){
 
 	claims2 := &Claims{}
 	tkn2 :=  &jwt.Token{}
-	tokenStr2 := c.Request.Header.Get("token")
+	tokenStr2 := c.Request.Header.Get("Authorization")
+
+	println()
+	log.Println(tokenStr2)
+	for name, values := range c.Request.Header {
+		// Loop over all values for the name.
+		for _, value := range values {
+			log.Println(name, value)
+		}
+	}
+	println()
+
 	// println()
 	// println("str2 : ", tokenStr2)
 	tkn2, err := jwt.ParseWithClaims(tokenStr2, claims2,
@@ -172,7 +183,7 @@ func LoginAuth(c *gin.Context){
 	}
 
 	/*TOKEN's DEMISE >:D*/
-	expirationTime := time.Now().Add(time.Minute * 30)
+	expirationTime := time.Now().Add(time.Minute * 1440)
 
 	claims := &Claims{
 		Username: InputLogin.Username,
@@ -387,11 +398,11 @@ func FollowFriend(c *gin.Context) {
 
 	err = service.FollowFriend(user.ID, id)
 	if err != nil {
-		c.JSON(http.StatusNotImplemented, helper.JsonMessage("ERROR", "Already followed. if not, contact the administrator"))
+		c.JSON(http.StatusBadRequest, helper.JsonMessage("ERROR", "Already followed. if not, contact the administrator"))
 		return
 	}
 
-	c.JSON(http.StatusOK, helper.JsonMessage("SUCCESS", "Followed :D"))
+	c.JSON(http.StatusCreated, helper.JsonMessage("SUCCESS", "Followed :D"))
 }
 
 func GiveLoveHandler(c *gin.Context){
