@@ -18,7 +18,7 @@ func main(){
 
 	r.GET("/login", handler.LoginHandler) //webpage
 	r.POST("/loginAuth", handler.LoginAuth) //POST, auth
-	
+
 	r.GET("/register", handler.RegisterHandler)//webpage
 	r.POST("/registerAuth", handler.RegisterAuth)//POST, auth
 
@@ -28,24 +28,26 @@ func main(){
 	r.GET("/post", handler.PostHandler) //webpage, gives categories for "post form"/"question form"
 	r.POST("/postAuth", handler.PostAuth)//POST, auth (title, content, id_category)
 	r.DELETE("/posts/:idPost/deleteAuth", handler.DeletePostAuth) //DELETE a post (including the answers)
-	
-	
+
+
 	r.POST("/posts/:idPost/love",handler.GiveLoveHandler) //give love to a post (backend harus nerima love_value)
 	r.DELETE("/posts/:idPost/unlove", handler.UnloveHandler) //unlove a post
 	r.PUT("/posts/:idPost/love", handler.UpdateLovePost) // change love value
-	
+
 	r.GET("/posts/:idPost/answer", handler.AnswerHandler) // answer "form", sebenarnya bisa di ShowPostHandler.. tapi kalau mau dipake untuk buat page terpisah gapapa
 	r.POST("/posts/:idPost/answerAuth", handler.AnswerAuth) //Answer auth
 	r.DELETE("/answer/:idAnswer/deleteAuth", handler.DeleteAnswerAuth) //DELETE an answer
-	
+
 	r.POST("/follow/user/:id", handler.FollowFriend) //Follow a friend
 	r.DELETE("/unfollow/user/:id", handler.Unfollow) //Unfollow a friend
+
+	r.PUT("/posts/:idPost/isAnswered", handler.IsAnsweredHandler) //update is answered attribute on a post
 	//============-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=`-=`-=`-=`-=`-`=-`=-`=-`=-`=-`=-`=-`=`-=`-=`-=`-=`-
-	
+
 
 	r.GET("/debug", handler.Debug)
 
-	log.Fatal(r.Run(port)) 
+	log.Fatal(r.Run(port))
 
 }
 

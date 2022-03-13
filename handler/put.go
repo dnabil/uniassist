@@ -71,3 +71,43 @@ func UpdateLovePost(c *gin.Context) {
 	c.JSON(http.StatusResetContent, helper.JsonMessage("SUCCESS", "Changed love value"))
 
 }
+
+//PUT, changes isAnswered value to true/false
+func IsAnsweredHandler(c *gin.Context) {
+	tkn, claims, err := cookieChecker(c)
+	if tkn == nil || claims == nil || err != nil{
+		c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"))
+		return
+	}
+
+	idPost := c.Param("idPost")
+	idPostInt, err := strconv.Atoi(idPost)
+	fmt.Printf("err: %v\n", err)
+	if err != nil || idPostInt < 0{
+		c.JSON(http.StatusNotFound, gin.H{
+			"status" : "ERROR",
+			"message" : " 404 Post NOT FOUND",
+		})
+		return
+	}; var id uint = uint(idPostInt) // id==idPost
+	//----
+
+	user := service.ResponseUserData(claims.Username)
+	post, err := service.GetPost(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, helper.JsonMessage("ERROR", "Failed to get post & user data, server error"))
+		return
+	}
+
+	if user.ID != post.UserId {
+		c.JSON(http.StatusUnauthorized, helper.JsonMessage("ERROR", "Unauthorized"))
+	}
+
+	err = service.UpdateIsAnswered(post.ID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, helper.JsonMessage("ERROR", "Failed to change isAnswered value"))
+		return
+	}
+
+	c.JSON(http.StatusOK, helper.JsonMessage("SUCCESS", "isAnswered value updated :D"))
+}

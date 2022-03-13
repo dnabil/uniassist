@@ -304,3 +304,14 @@ func LoveRowsAffected(idPost uint) (int64){
 	q := repo.Db.Where("post_id = ?", idPost).Find(&[]entity.LovePost{}).RowsAffected
 	return q
 }
+
+//update isAnswered attribute on a post
+func UpdateIsAnswered(idPost uint)(err error){
+	var post entity.Post
+	err  = repo.Db.Where("id = ?", idPost).First(&post).Error
+	if err != nil {return}
+	var changeTo bool
+	if post.IsAnswered == false { changeTo = true } else { changeTo = false }
+	err = repo.Db.Where("id = ?", idPost).Update("is_answered", changeTo).Error
+	return
+}
